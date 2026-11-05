@@ -7,6 +7,7 @@
 # You should have received a copy of the Udacity license together with this program.
 #
 # https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013
+# Revised 11/26: K. Ofori
 # ----------------------------------------------------------------------
 #
 
@@ -30,10 +31,27 @@ def vis_intensity_channel(frame, lidar_name):
 
     print("Exercise C1-5-5")
     # extract range image from frame
-
+    lidar = [obj for obj in frame.lasers if obj.name == lidar_name][0] # get laser data structure from frame
+    if len(lidar.ri_return1.range_image_compressed) > 0: # use first response
+        ri = dataset_pb2.MatrixFloat()
+        ri.ParseFromString(zlib.decompress(lidar.ri_return1.range_image_compressed))
+        ri = np.array(ri.data).reshape(ri.shape.dims)
+    ri[ri < 0] = 0.0
+    
     # map value range to 8bit
+    ri_intensity = ri[:,:,1]
+    # ri_intensity = ri_intensity * 255 / (np.amax(ri_intensity) - np.amin(ri_intensity))
+    # "contrast adjustment" - multiply the entire intensity image with half the value of the max (for  better visibility). 
+    ri_intensity = np.amax(ri_intensity)/2 * ri_intensity * 255 / (np.amax(ri_intensity) - np.amin(ri_intensity))
+    img_intensity = ri_intensity.astype(np.uint8)
 
     # focus on +/- 45° around the image center
+    deg45 = int(img_intensity.shape[1] / 8)
+    ri_center = int(img_intensity.shape[1]/2)
+    img_intensity = img_intensity[:,ri_center-deg45:ri_center+deg45]
+    
+    cv2.imshow('image intensity', img_intensity)
+    cv2.waitKey(0)
 
 
 
